@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# Get the directory where the script is running
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
 # Configuration file path
-CONFIG_FILE="config"
+CONFIG_FILE="$SCRIPT_DIR/config"
 
 # Load configuration if file exists
 if [ -f "$CONFIG_FILE" ]; then
@@ -16,16 +19,19 @@ IFS=',' read -r -a local_dirs_array <<< "$LOCALDIRS"
 
 # Convert comma-separated list into rclone flags
 convert_to_rclone_flags() {
-    local patterns=$1
-    local flag=$2
-    local result=""
+    local patterns="$1"
+    local flag="$2"
+    local result=()
 
-    IFS=',' read -ra ADDR <<< "$patterns"
-    for i in "${ADDR[@]}"; do
-        result+="$flag $i "
-    done
+    if [ -n "$patterns" ]; then
+        # Split the patterns using commas as a delimiter
+        IFS=',' read -ra ADDR <<< "$patterns"
+        for i in "${ADDR[@]}"; do
+            result+=("$flag=\"$i\"") # Enclose each pattern in double quotes
+        done
+    fi
 
-    echo $result
+    echo "${result[@]}"
 }
 
 # Ensure log file and directory exist
@@ -50,9 +56,9 @@ ensure_logfile_exists() {
 ensure_logfile_exists "$LOGFILE"
 
 # Process patterns
-EXCLUDE_FLAGS=$(convert_to_rclone_flags "$EXCLUDE_PATTERNS" "--exclude")
-INCLUDE_FLAGS=$(convert_to_rclone_flags "$INCLUDE_PATTERN" "--include")
-EXCLUDE_IF_PRESENT_FLAGS=$(convert_to_rclone_flags "$EXCLUDE_IF_PRESENT" "--exclude-if-present")
+readarray -t EXCLUDE_FLAGS < <(convert_to_rclone_flags "$EXCLUDE_PATTERNS" "--exclude")
+readarray -t INCLUDE_FLAGS < <(convert_to_rclone_flags "$INCLUDE_PATTERNS" "--include")
+readarray -t EXCLUDE_IF_PRESENT_FLAGS < <(convert_to_rclone_flags "$EXCLUDE_IF_PRESENT" "--exclude-if-present")
 
 # Check if BWLIMIT is set and format it for rclone
 [ -n "$BWLIMIT" ] && BWLIMIT="--bwlimit=$BWLIMIT"
@@ -75,20 +81,38 @@ ART="_.~"~._.~"~._.~"~._.~"~._"
 START="$ART Rclone Copy Job started at $(date "+%d.%m.%Y %T") $ART"
 END="$ART Rclone Copy Job ended at $(date "+%d.%m.%Y %T") $ART"
 
+# Function to join array elements into a string
+join_by() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
 # Loop through each local directory and perform the operation
 for LOCALDIR in "${local_dirs_array[@]}"; do
     echo "Starting $OPERATION_MODE for $LOCALDIR" | tee -a $LOGFILE
 
-    rclone $OPERATION_MODE $LOCALDIR $REMOTEDIR --log-level=$LOGLEVEL \
-        --log-file=$LOGFILE $INCLUDE_FLAGS $EXCLUDE_FLAGS $EXCLUDE_IF_PRESENT_FLAGS \
-        --transfers=$TRANSFER_LIMIT $BWLIMIT $CUSTOM_FLAGS $PROGRESS_FLAG \
-        --retries=$RETRIES --retries-sleep=${RETRY_DELAY}s \
-        --checkers=$CHECKERS $VERBOSE_FLAG $DRY_RUN_FLAG
+    # Construct rclone command with conditional inclusion of flags
+    RCLONE_CMD="rclone $OPERATION_MODE \"$LOCALDIR\" \"$REMOTEDIR\" --log-level=$LOGLEVEL --log-file=$LOGFILE --transfers=$TRANSFER_LIMIT $BWLIMIT $CUSTOM_FLAGS $PROGRESS_FLAG --retries=$RETRIES --retries-sleep=${RETRY_DELAY}s --checkers=$CHECKERS $VERBOSE_FLAG $DRY_RUN_FLAG"
+
+    # Append include and exclude flags if they are not empty
+    if [ ${#INCLUDE_FLAGS[@]} -ne 0 ]; then
+        RCLONE_CMD+=" $(join_by ' ' "${INCLUDE_FLAGS[@]}")"
+    fi
+
+    if [ ${#EXCLUDE_FLAGS[@]} -ne 0 ]; then
+        RCLONE_CMD+=" $(join_by ' ' "${EXCLUDE_FLAGS[@]}")"
+    fi
+
+    if [ ${#EXCLUDE_IF_PRESENT_FLAGS[@]} -ne 0 ]; then
+        RCLONE_CMD+=" $(join_by ' ' "${EXCLUDE_IF_PRESENT_FLAGS[@]}")"
+    fi
+
+    eval $RCLONE_CMD
     STATUS=$?
 
     if [ $STATUS -ne 0 ]; then
         echo "Rclone $OPERATION_MODE encountered an error for $LOCALDIR. Check the log file for details." | tee -a $LOGFILE
-        # exit $STATUS
     fi
 
     echo "Completed $OPERATION_MODE for $LOCALDIR" | tee -a $LOGFILE
