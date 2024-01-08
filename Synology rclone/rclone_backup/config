@@ -27,12 +27,12 @@ TRANSFER_LIMIT=4
 # Reference: https://rclone.org/filtering/#exclude
 EXCLUDE_PATTERNS="*.db@SynoEAStream,.db,*/@eaDir/**,*.DS_Store,*.lnk,*@SynoResource*,*@eaDir*,*#recycle*"
 
-# Exclude directories if a specified filename is present (space-separated list)
+# Exclude directories if a specified filename is present (comma-separated list)
 # Example format: "secret.txt,temp.txt"
 # Reference: https://rclone.org/filtering/#exclude-if-present
 EXCLUDE_IF_PRESENT=""
 
-# Include only files that match a pattern (space-separated list)
+# Include only files that match a pattern (comma-separated list)
 # Example format: "*.jpg,*.png"
 # Reference: https://rclone.org/filtering/#include
 INCLUDE_PATTERN=""
