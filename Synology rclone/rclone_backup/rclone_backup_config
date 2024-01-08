@@ -1,0 +1,59 @@
+# Rclone Backup Script Configuration
+
+# Local directory to be backed up
+# Reference: https://rclone.org/commands/rclone_copy/
+LOCALDIR="/volume1/"
+
+# Remote directory destination (e.g., Google Drive)
+REMOTEDIR="rcloneremote:"
+
+# Log level for rclone (DEBUG, INFO, ERROR)
+# Reference: https://rclone.org/docs/#log-level-level
+LOGLEVEL="INFO"
+
+# Path to the log file
+LOGFILE="/volume1/log/upload.log"
+
+# Number of file transfers to perform simultaneously
+# Reference: https://rclone.org/docs/#transfers-n
+TRANSFER_LIMIT=4
+
+# Exclude patterns (space-separated list)
+# Reference: https://rclone.org/filtering/#exclude
+EXCLUDE_PATTERNS="*.{db@SynoEAStream,db},*/@eaDir/**,*.DS_Store,*.lnk,*@SynoResource*,*@eaDir*,*#recycle*"
+
+# Custom flags (space-separated list)
+# Reference: https://rclone.org/flags/
+CUSTOM_FLAGS="--fast-list"
+
+# Bandwidth limit (e.g., "10M" for 10 MBytes/s, or leave empty for unlimited)
+# Reference: https://rclone.org/docs/#bwlimit-bandwidth-spec
+BWLIMIT=""
+
+# Number of retries after a failure
+# Reference: https://rclone.org/docs/#retries-int
+RETRIES=3
+
+# Delay between retries, in seconds
+# Reference: https://rclone.org/docs/#retries-sleep-duration
+RETRY_DELAY=5
+
+# Include only files that match a pattern (space-separated list)
+# Reference: https://rclone.org/filtering/#include
+INCLUDE_PATTERN=""
+
+# Exclude directories if a specified filename is present (space-separated list)
+# Reference: https://rclone.org/filtering/#exclude-if-present
+EXCLUDE_IF_PRESENT=""
+
+# Number of checkers to run in parallel (affects the speed of file checks)
+# Reference: https://rclone.org/docs/#checkers-n
+CHECKERS=8
+
+# Enable verbose logging (true/false)
+# Reference: https://rclone.org/docs/#v-vv
+VERBOSE=false
+
+# Enable dry run mode for testing (true/false)
+# Reference: https://rclone.org/docs/#n-dry-run
+DRY_RUN=false
