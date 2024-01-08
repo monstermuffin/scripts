@@ -1,0 +1,3 @@
+[submodule "mergerfs-cache-mover"]
+	path = mergerfs-cache-mover
+	url = https://github.com/MonsterMuffin/mergerfs-cache-mover.git
