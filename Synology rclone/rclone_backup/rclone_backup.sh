@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration file path
-CONFIG_FILE="rclone_backup_config"
+CONFIG_FILE="config"
 
 # Load configuration if file exists
 if [ -f "$CONFIG_FILE" ]; then
@@ -75,23 +75,23 @@ ART="_.~"~._.~"~._.~"~._.~"~._"
 START="$ART Rclone Copy Job started at $(date "+%d.%m.%Y %T") $ART"
 END="$ART Rclone Copy Job ended at $(date "+%d.%m.%Y %T") $ART"
 
-# Loop through each local directory and perform the backup
+# Loop through each local directory and perform the operation
 for LOCALDIR in "${local_dirs_array[@]}"; do
-    echo "Starting backup for $LOCALDIR" | tee -a $LOGFILE
+    echo "Starting $OPERATION_MODE for $LOCALDIR" | tee -a $LOGFILE
 
-    # Rclone Copy Script for each local directory
-    rclone copy $LOCALDIR $REMOTEDIR --log-level=$LOGLEVEL --log-file=$LOGFILE \
-        $INCLUDE_FLAGS $EXCLUDE_FLAGS $EXCLUDE_IF_PRESENT_FLAGS \
+    rclone $OPERATION_MODE $LOCALDIR $REMOTEDIR --log-level=$LOGLEVEL \
+        --log-file=$LOGFILE $INCLUDE_FLAGS $EXCLUDE_FLAGS $EXCLUDE_IF_PRESENT_FLAGS \
         --transfers=$TRANSFER_LIMIT $BWLIMIT $CUSTOM_FLAGS $PROGRESS_FLAG \
         --retries=$RETRIES --retries-sleep=${RETRY_DELAY}s \
         --checkers=$CHECKERS $VERBOSE_FLAG $DRY_RUN_FLAG
     STATUS=$?
 
     if [ $STATUS -ne 0 ]; then
-        echo "Rclone operation encountered an error for $LOCALDIR. Check the log file for details." | tee -a $LOGFILE
+        echo "Rclone $OPERATION_MODE encountered an error for $LOCALDIR. Check the log file for details." | tee -a $LOGFILE
+        # exit $STATUS
     fi
 
-    echo "Completed backup for $LOCALDIR" | tee -a $LOGFILE
+    echo "Completed $OPERATION_MODE for $LOCALDIR" | tee -a $LOGFILE
 done
 
 echo "All specified directories have been processed." | tee -a $LOGFILE

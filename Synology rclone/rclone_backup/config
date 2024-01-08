@@ -7,6 +7,10 @@ LOCALDIRS="/volume1/"
 # Remote directory destination (e.g., Google Drive)
 REMOTEDIR="rcloneremote:"
 
+# Operation mode: copy, sync, or move
+# Reference: https://rclone.org/commands/rclone_sync/
+OPERATION_MODE="copy"
+
 # Log level for rclone (DEBUG, INFO, ERROR)
 # Reference: https://rclone.org/docs/#log-level-level
 LOGLEVEL="INFO"
