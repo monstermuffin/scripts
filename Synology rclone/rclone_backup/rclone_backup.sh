@@ -3,13 +3,16 @@
 # Configuration file path
 CONFIG_FILE="rclone_backup_config"
 
-# Load configuration / Warn
+# Load configuration if file exists
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
 else
     echo "Configuration file not found at $CONFIG_FILE"
     exit 1
 fi
+
+# Convert LOCALDIRS into an array
+IFS=',' read -r -a local_dirs_array <<< "$LOCALDIRS"
 
 # Convert comma-separated list into rclone flags
 convert_to_rclone_flags() {
@@ -25,6 +28,27 @@ convert_to_rclone_flags() {
     echo $result
 }
 
+# Ensure log file and directory exist
+ensure_logfile_exists() {
+    local logfile=$1
+    local logdir
+
+    logdir=$(dirname "$logfile")
+
+    # Create log directory if it doesn't exist
+    if [ ! -d "$logdir" ]; then
+        mkdir -p "$logdir"
+    fi
+
+    # Create log file if it doesn't exist
+    if [ ! -f "$logfile" ]; then
+        touch "$logfile"
+    fi
+}
+
+# Ensure the log file and directory exist
+ensure_logfile_exists "$LOGFILE"
+
 # Process patterns
 EXCLUDE_FLAGS=$(convert_to_rclone_flags "$EXCLUDE_PATTERNS" "--exclude")
 INCLUDE_FLAGS=$(convert_to_rclone_flags "$INCLUDE_PATTERN" "--include")
@@ -39,33 +63,35 @@ EXCLUDE_IF_PRESENT_FLAGS=$(convert_to_rclone_flags "$EXCLUDE_IF_PRESENT" "--excl
 # Check if DRY_RUN is true and set dry-run flag
 [ "$DRY_RUN" = true ] && DRY_RUN_FLAG="--dry-run"
 
-# Add --progress flag if running interactively
+# Add --progress flag if running interactively (terminal is attached to standard input)
 if [ -t 0 ]; then
     PROGRESS_FLAG="--progress"
 else
     PROGRESS_FLAG=""
 fi
 
-# Art for logs
+# Art for logs and start/end messages
 ART="_.~"~._.~"~._.~"~._.~"~._"
-
-# Date & Time
 START="$ART Rclone Copy Job started at $(date "+%d.%m.%Y %T") $ART"
 END="$ART Rclone Copy Job ended at $(date "+%d.%m.%Y %T") $ART"
 
-# Rclone Copy Script
-echo $START | tee -a $LOGFILE
-rclone copy $LOCALDIR $REMOTEDIR --log-level=$LOGLEVEL --log-file=$LOGFILE \
-    $INCLUDE_FLAGS $EXCLUDE_FLAGS $EXCLUDE_IF_PRESENT_FLAGS \
-    --transfers=$TRANSFER_LIMIT $BWLIMIT $CUSTOM_FLAGS $PROGRESS_FLAG \
-    --retries=$RETRIES --retries-sleep=${RETRY_DELAY}s \
-    --checkers=$CHECKERS $VERBOSE_FLAG $DRY_RUN_FLAG
-STATUS=$?
-echo $END | tee -a $LOGFILE
+# Loop through each local directory and perform the backup
+for LOCALDIR in "${local_dirs_array[@]}"; do
+    echo "Starting backup for $LOCALDIR" | tee -a $LOGFILE
 
-if [ $STATUS -ne 0 ]; then
-    echo "Rclone operation encountered an error. Check the log file." | tee -a $LOGFILE
-    exit $STATUS
-fi
+    # Rclone Copy Script for each local directory
+    rclone copy $LOCALDIR $REMOTEDIR --log-level=$LOGLEVEL --log-file=$LOGFILE \
+        $INCLUDE_FLAGS $EXCLUDE_FLAGS $EXCLUDE_IF_PRESENT_FLAGS \
+        --transfers=$TRANSFER_LIMIT $BWLIMIT $CUSTOM_FLAGS $PROGRESS_FLAG \
+        --retries=$RETRIES --retries-sleep=${RETRY_DELAY}s \
+        --checkers=$CHECKERS $VERBOSE_FLAG $DRY_RUN_FLAG
+    STATUS=$?
 
-exit 0
+    if [ $STATUS -ne 0 ]; then
+        echo "Rclone operation encountered an error for $LOCALDIR. Check the log file for details." | tee -a $LOGFILE
+    fi
+
+    echo "Completed backup for $LOCALDIR" | tee -a $LOGFILE
+done
+
+echo "All specified directories have been processed." | tee -a $LOGFILE
