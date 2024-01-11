@@ -27,6 +27,11 @@ if [ -f "$DEFAULT_RCLONE_CONFIG" ] && [ ! -L "$DEFAULT_RCLONE_CONFIG" ]; then
     mv "$DEFAULT_RCLONE_CONFIG" "$PERSISTENT_RCLONE_CONFIG"
 fi
 
+if [ ! -f "$PERSISTENT_RCLONE_CONFIG" ]; then
+    echo "No rclone config found at persistent location. Creating an empty rclone config."
+    touch "$PERSISTENT_RCLONE_CONFIG"
+fi
+
 if [ ! -L "$DEFAULT_RCLONE_CONFIG" ] || [ "$(readlink -f "$DEFAULT_RCLONE_CONFIG")" != "$PERSISTENT_RCLONE_CONFIG" ]; then
     echo "Creating symlink for rclone config..."
     mkdir -p "$(dirname "$DEFAULT_RCLONE_CONFIG")"
