@@ -1,16 +1,17 @@
 #!/bin/bash
 
-# Check if rclone is installed
+PERSISTENT_RCLONE_CONFIG="/volume1/config/rclone.conf"
+DEFAULT_RCLONE_CONFIG="/root/.config/rclone/rclone.conf"
+
+mkdir -p "$(dirname "$PERSISTENT_RCLONE_CONFIG")"
+
 if ! command -v rclone &> /dev/null
 then
     echo "rclone not found, installing..."
     curl https://rclone.org/install.sh | sudo bash
 else
     echo "rclone found, checking for updates..."
-    # Get the currently installed version
     installed_version=$(rclone --version | head -1 | awk '{print $2}')
-
-    # Get the latest version number from rclone's website
     latest_version=$(curl -s https://downloads.rclone.org/version.txt | awk '{print $2}')
 
     if [ "$installed_version" != "$latest_version" ]; then
@@ -19,4 +20,17 @@ else
     else
         echo "rclone is up to date."
     fi
+fi
+
+if [ -f "$DEFAULT_RCLONE_CONFIG" ] && [ ! -L "$DEFAULT_RCLONE_CONFIG" ]; then
+    echo "Moving existing rclone config to persistent location..."
+    mv "$DEFAULT_RCLONE_CONFIG" "$PERSISTENT_RCLONE_CONFIG"
+fi
+
+if [ ! -L "$DEFAULT_RCLONE_CONFIG" ] || [ "$(readlink -f "$DEFAULT_RCLONE_CONFIG")" != "$PERSISTENT_RCLONE_CONFIG" ]; then
+    echo "Creating symlink for rclone config..."
+    mkdir -p "$(dirname "$DEFAULT_RCLONE_CONFIG")"
+    ln -sf "$PERSISTENT_RCLONE_CONFIG" "$DEFAULT_RCLONE_CONFIG"
+else
+    echo "Symlink for rclone config already exists and is correctly set."
 fi
