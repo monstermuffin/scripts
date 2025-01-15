@@ -25,7 +25,7 @@ TRANSFER_LIMIT=4
 # Exclude patterns (comma-separated list)
 # Example format: "*.tmp,*.log,*/temp/*"
 # Reference: https://rclone.org/filtering/#exclude
-EXCLUDE_PATTERNS="*.db@SynoEAStream,.db,*/@eaDir/**,*.DS_Store,*.lnk,*@SynoResource*,*@eaDir*,*#recycle*"
+EXCLUDE_PATTERNS="*.db@SynoEAStream,.db,@eaDir/**,*.DS_Store,*.lnk,@SynoResource/**,#recycle/**"
 
 # Exclude directories if a specified filename is present (comma-separated list)
 # Example format: "secret.txt,temp.txt"
